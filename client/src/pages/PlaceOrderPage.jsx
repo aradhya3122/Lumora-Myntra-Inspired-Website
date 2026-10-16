@@ -89,7 +89,12 @@ const PlaceOrderPage = () => {
                   {cart.cartItems.map((item, index) => (
                     <div key={index} className="flex py-4">
                       <div className="h-20 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
-                        <img src={item.image} alt={item.name} className="h-full w-full object-cover object-center" />
+                        <img
+                          src={item.image || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=600&auto=format&fit=crop'}
+                          alt={item.name}
+                          onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=600&auto=format&fit=crop'; }}
+                          className="h-full w-full object-cover object-center"
+                        />
                       </div>
                       <div className="ml-4 flex flex-1 flex-col justify-center">
                         <Link to={`/product/${item.product}`} className="font-medium text-gray-900">{item.name}</Link>

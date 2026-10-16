@@ -14,14 +14,18 @@ const ProductDetailsPage = () => {
   
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
+  const [activeImage, setActiveImage] = useState('');
   const [qty, setQty] = useState(1);
   const [error, setError] = useState('');
+
+  const FALLBACK_IMG = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=900&auto=format&fit=crop';
 
   useEffect(() => {
     const fetchProduct = async () => {
       try {
         const { data } = await axios.get(`http://localhost:5000/api/products/${id}`);
         setProduct(data);
+        setActiveImage(data.image || data.images?.[0] || FALLBACK_IMG);
         if (data.sizes?.length > 0) setSelectedSize(data.sizes[0]);
         if (data.colors?.length > 0) setSelectedColor(data.colors[0]);
         setLoading(false);
@@ -90,18 +94,31 @@ const ProductDetailsPage = () => {
             
             {/* Image Gallery */}
             <div className="flex flex-col-reverse lg:flex-row gap-4">
-              <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto lg:w-24">
-                {product.images?.map((img, idx) => (
-                  <button key={idx} className="relative h-24 w-20 flex-shrink-0 rounded-md bg-white border border-gray-200 overflow-hidden hover:border-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-900">
-                    <img src={img} alt="" className="h-full w-full object-cover object-center" />
+              <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto lg:w-24 pb-2 lg:pb-0">
+                {(product.images && product.images.length > 0 ? product.images : [activeImage]).map((img, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveImage(img)}
+                    className={`relative h-24 w-20 flex-shrink-0 rounded-xl bg-white border-2 overflow-hidden transition-all duration-200 ${
+                      activeImage === img ? 'border-brand-900 shadow-md ring-1 ring-brand-900' : 'border-gray-200 hover:border-gray-400'
+                    }`}
+                  >
+                    <img
+                      src={img}
+                      alt=""
+                      onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_IMG; }}
+                      className="h-full w-full object-cover object-center"
+                    />
                   </button>
                 ))}
               </div>
-              <div className="w-full aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden relative">
+              <div className="w-full aspect-[3/4] bg-gray-50 rounded-2xl overflow-hidden relative shadow-sm border border-gray-100">
                 <img
-                  src={product.image || product.images?.[0]}
+                  src={activeImage || product.image || FALLBACK_IMG}
                   alt={product.name}
-                  className="h-full w-full object-cover object-center"
+                  onError={(e) => { e.target.onerror = null; e.target.src = FALLBACK_IMG; }}
+                  className="h-full w-full object-cover object-center transition-all duration-300"
                 />
               </div>
             </div>

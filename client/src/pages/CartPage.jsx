@@ -44,8 +44,9 @@ const CartPage = () => {
                   <div key={`${item._id}-${item.size}-${item.color}`} className="flex py-6">
                     <div className="h-32 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
                       <img
-                        src={item.image}
+                        src={item.image || 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=600&auto=format&fit=crop'}
                         alt={item.name}
+                        onError={(e) => { e.target.onerror = null; e.target.src = 'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?q=80&w=600&auto=format&fit=crop'; }}
                         className="h-full w-full object-cover object-center"
                       />
                     </div>

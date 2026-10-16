@@ -7,17 +7,23 @@ const ProductListingPage = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const location = useLocation();
-  const category = location.pathname.substring(1); // e.g. "/men" -> "men"
+  const pathSegment = location.pathname.substring(1).toLowerCase(); // e.g. "men", "women", "products"
+  const isAllProducts = !pathSegment || pathSegment === 'products';
   
   // Format category string (capitalize first letter)
-  const categoryTitle = category.charAt(0).toUpperCase() + category.slice(1);
+  const categoryTitle = isAllProducts
+    ? 'All'
+    : pathSegment.charAt(0).toUpperCase() + pathSegment.slice(1);
 
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const { data } = await axios.get(`http://localhost:5000/api/products?category=${categoryTitle}`);
-        setProducts(data.products);
+        const url = isAllProducts
+          ? 'http://localhost:5000/api/products?pageSize=40'
+          : `http://localhost:5000/api/products?category=${categoryTitle}&pageSize=40`;
+        const { data } = await axios.get(url);
+        setProducts(data.products || []);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching products:', error);
@@ -25,13 +31,15 @@ const ProductListingPage = () => {
       }
     };
     fetchProducts();
-  }, [categoryTitle]);
+  }, [categoryTitle, isAllProducts]);
 
   return (
     <div>
       <div className="flex items-baseline justify-between border-b border-gray-200 pb-6 mb-8 pt-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 font-serif">{categoryTitle} Clothing</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 font-serif">
+            {isAllProducts ? 'All Products' : `${categoryTitle} Collection`}
+          </h1>
           <p className="mt-1 text-sm text-gray-500"><span className="font-bold">{products.length}</span> items</p>
         </div>
         

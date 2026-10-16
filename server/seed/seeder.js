@@ -39,11 +39,11 @@ const importData = async () => {
     await Product.insertMany(sampleProducts);
 
     const sampleCategories = [
-      { name: 'Men', image: '/images/sample.jpg' },
-      { name: 'Women', image: '/images/sample.jpg' },
-      { name: 'Kids', image: '/images/sample.jpg' },
-      { name: 'Beauty', image: '/images/sample.jpg' },
-      { name: 'Accessories', image: '/images/sample.jpg' },
+      { name: 'Men', image: 'https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?q=80&w=800&auto=format&fit=crop' },
+      { name: 'Women', image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=800&auto=format&fit=crop' },
+      { name: 'Kids', image: 'https://images.unsplash.com/photo-1519457431-44ccd64a579b?q=80&w=800&auto=format&fit=crop' },
+      { name: 'Beauty', image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=800&auto=format&fit=crop' },
+      { name: 'Accessories', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=800&auto=format&fit=crop' },
     ];
 
     await Category.insertMany(sampleCategories);
