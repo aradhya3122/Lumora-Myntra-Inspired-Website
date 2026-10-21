@@ -128,11 +128,21 @@ const deleteProduct = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Create new review
+// @desc    Create or update product review
 // @route   POST /api/products/:id/reviews
 // @access  Private
 const createProductReview = asyncHandler(async (req, res) => {
-  const { rating, comment } = req.body;
+  const { rating, comment, title, image } = req.body;
+
+  if (!rating || Number(rating) < 1 || Number(rating) > 5) {
+    res.status(400);
+    throw new Error('Please select a star rating between 1 and 5');
+  }
+
+  if (!comment || comment.trim() === '') {
+    res.status(400);
+    throw new Error('Please enter a review comment');
+  }
 
   const product = await Product.findById(req.params.id);
 
@@ -142,27 +152,37 @@ const createProductReview = asyncHandler(async (req, res) => {
     );
 
     if (alreadyReviewed) {
-      res.status(400);
-      throw new Error('Product already reviewed');
+      alreadyReviewed.rating = Number(rating);
+      alreadyReviewed.comment = comment.trim();
+      if (title !== undefined) alreadyReviewed.title = title.trim();
+      if (image !== undefined) alreadyReviewed.image = image;
+    } else {
+      const review = {
+        name: req.user.name,
+        rating: Number(rating),
+        title: title ? title.trim() : '',
+        comment: comment.trim(),
+        image: image || '',
+        verified: true,
+        user: req.user._id,
+      };
+
+      product.reviews.unshift(review);
     }
-
-    const review = {
-      name: req.user.name,
-      rating: Number(rating),
-      comment,
-      user: req.user._id,
-    };
-
-    product.reviews.push(review);
 
     product.numReviews = product.reviews.length;
 
-    product.rating =
-      product.reviews.reduce((acc, item) => item.rating + acc, 0) /
-      product.reviews.length;
+    const totalRatings = product.reviews.reduce((acc, item) => item.rating + acc, 0);
+    product.rating = Number((totalRatings / product.reviews.length).toFixed(1));
 
     await product.save();
-    res.status(201).json({ message: 'Review added' });
+
+    res.status(201).json({
+      message: alreadyReviewed ? 'Review updated successfully!' : 'Review submitted successfully!',
+      reviews: product.reviews,
+      rating: product.rating,
+      numReviews: product.numReviews,
+    });
   } else {
     res.status(404);
     throw new Error('Product not found');

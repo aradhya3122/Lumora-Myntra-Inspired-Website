@@ -31,9 +31,37 @@ const importData = async () => {
     const createdUsers = await User.insertMany(hashedUsers);
 
     const adminUser = createdUsers[0]._id;
+    const customerUser = createdUsers[1] ? createdUsers[1]._id : adminUser;
+
+    const sampleReviews = [
+      {
+        name: 'Ananya Sharma',
+        rating: 5,
+        title: 'Exceeded all expectations! Luxurious fabric.',
+        comment: 'The quality of the material is exceptional. Fits true to size, feels breathable, and the color matches the pictures perfectly.',
+        image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=600&auto=format&fit=crop',
+        verified: true,
+        user: customerUser,
+      },
+      {
+        name: 'Rohan Mehra',
+        rating: 4,
+        title: 'Very stylish cut & great stitching',
+        comment: 'Great everyday wear. The stitching is clean and durable. Delivered in just 2 days in premium packaging.',
+        image: '',
+        verified: true,
+        user: adminUser,
+      },
+    ];
 
     const sampleProducts = products.map((product) => {
-      return { ...product, user: adminUser };
+      return { 
+        ...product, 
+        user: adminUser,
+        reviews: sampleReviews,
+        numReviews: sampleReviews.length,
+        rating: 4.5,
+      };
     });
 
     await Product.insertMany(sampleProducts);
