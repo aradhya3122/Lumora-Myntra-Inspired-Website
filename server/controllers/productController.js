@@ -236,6 +236,14 @@ const getTopProducts = asyncHandler(async (req, res) => {
   res.json(products);
 });
 
+// @desc    Get all reviews from the reviews collection
+// @route   GET /api/products/reviews/all
+// @access  Public
+const getAllReviews = asyncHandler(async (req, res) => {
+  const reviews = await Review.find({}).sort({ createdAt: -1 });
+  res.json({ count: reviews.length, reviews });
+});
+
 export {
   getProducts,
   getProductById,
@@ -244,4 +252,5 @@ export {
   deleteProduct,
   createProductReview,
   getTopProducts,
+  getAllReviews,
 };
