@@ -46,6 +46,7 @@ const ProductDetailsPage = () => {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [lightboxImage, setLightboxImage] = useState(null);
   const [helpfulVotes, setHelpfulVotes] = useState({});
+  const [reviewerName, setReviewerName] = useState(userInfo?.name || '');
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -105,6 +106,8 @@ const ProductDetailsPage = () => {
       return;
     }
 
+    const finalName = userInfo?.name || reviewerName.trim() || 'Verified Customer';
+
     setSubmittingReview(true);
     setReviewError('');
     setReviewSuccess('');
@@ -113,14 +116,20 @@ const ProductDetailsPage = () => {
       const config = {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${userInfo?.token || ''}`,
+          ...(userInfo?.token ? { Authorization: `Bearer ${userInfo.token}` } : {}),
         },
         withCredentials: true,
       };
 
       const { data } = await axios.post(
         `http://localhost:5000/api/products/${id}/reviews`,
-        { rating, title, comment, image: reviewImage },
+        { 
+          rating, 
+          title, 
+          comment, 
+          image: reviewImage,
+          name: finalName 
+        },
         config
       );
 
@@ -509,26 +518,38 @@ const ProductDetailsPage = () => {
             {/* Interactive Review Form */}
             {showReviewForm && (
               <div className="bg-white border-2 border-brand-900/20 rounded-2xl p-6 sm:p-8 mb-12 shadow-md transition-all">
-                {!userInfo ? (
-                  <div className="text-center py-8">
-                    <AlertCircle size={36} className="text-brand-900 mx-auto mb-3" />
-                    <h3 className="text-lg font-bold text-gray-900 mb-1">Please Sign In</h3>
-                    <p className="text-sm text-gray-500 mb-6 max-w-md mx-auto">
-                      You must be signed in to submit a rating and customer review for this product.
-                    </p>
-                    <Link
-                      to={`/login?redirect=/product/${id}`}
-                      className="bg-brand-900 text-white px-8 py-2.5 rounded-full font-medium text-sm hover:bg-brand-500 transition-colors inline-block"
-                    >
-                      Sign In Now
-                    </Link>
+                <form onSubmit={handleReviewSubmit} className="space-y-6">
+                  <div className="border-b border-gray-100 pb-4">
+                    <h3 className="text-xl font-bold font-serif text-gray-900">Write a Customer Review</h3>
+                    <p className="text-xs text-gray-500 mt-1">Share your honest feedback to help other fashion shoppers.</p>
                   </div>
-                ) : (
-                  <form onSubmit={handleReviewSubmit} className="space-y-6">
-                    <div className="border-b border-gray-100 pb-4">
-                      <h3 className="text-xl font-bold font-serif text-gray-900">Write a Customer Review</h3>
-                      <p className="text-xs text-gray-500 mt-1">Share your honest feedback to help other fashion shoppers.</p>
+
+                  {userInfo ? (
+                    <div className="bg-brand-50/70 border border-brand-200/60 rounded-xl p-3.5 flex items-center justify-between text-xs text-gray-700">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle size={16} className="text-brand-900" />
+                        <span>Reviewing as <strong>{userInfo.name}</strong> ({userInfo.email})</span>
+                      </div>
+                      <span className="text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded">Verified Account</span>
                     </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-1.5">
+                        Your Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Priya Sharma"
+                        value={reviewerName}
+                        onChange={(e) => setReviewerName(e.target.value)}
+                        required
+                        className="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-900 text-sm"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Already have an account? <Link to={`/login?redirect=/product/${id}`} className="text-brand-900 font-semibold underline">Sign in</Link> to link your purchase.
+                      </p>
+                    </div>
+                  )}
 
                     {reviewSuccess && (
                       <div className="flex items-center space-x-2 bg-green-50 text-green-800 p-4 rounded-xl text-sm border border-green-200">
@@ -678,7 +699,6 @@ const ProductDetailsPage = () => {
                       </button>
                     </div>
                   </form>
-                )}
               </div>
             )}
 

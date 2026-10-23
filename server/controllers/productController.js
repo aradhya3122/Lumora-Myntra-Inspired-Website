@@ -1,5 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import Product from '../models/productModel.js';
+import Review from '../models/reviewModel.js';
 
 // @desc    Fetch all products
 // @route   GET /api/products
@@ -130,9 +131,9 @@ const deleteProduct = asyncHandler(async (req, res) => {
 
 // @desc    Create or update product review
 // @route   POST /api/products/:id/reviews
-// @access  Private
+// @access  Public / Protected (supports authenticated and guest reviews)
 const createProductReview = asyncHandler(async (req, res) => {
-  const { rating, comment, title, image } = req.body;
+  const { rating, comment, title, image, name } = req.body;
 
   if (!rating || Number(rating) < 1 || Number(rating) > 5) {
     res.status(400);
@@ -146,47 +147,84 @@ const createProductReview = asyncHandler(async (req, res) => {
 
   const product = await Product.findById(req.params.id);
 
-  if (product) {
-    const alreadyReviewed = product.reviews.find(
-      (r) => r.user.toString() === req.user._id.toString()
-    );
+  if (!product) {
+    res.status(404);
+    throw new Error('Product not found');
+  }
 
-    if (alreadyReviewed) {
-      alreadyReviewed.rating = Number(rating);
-      alreadyReviewed.comment = comment.trim();
-      if (title !== undefined) alreadyReviewed.title = title.trim();
-      if (image !== undefined) alreadyReviewed.image = image;
-    } else {
-      const review = {
-        name: req.user.name,
+  const reviewerName = req.user?.name || name?.trim() || 'Verified Customer';
+  const userId = req.user?._id || null;
+
+  // Check if user already reviewed
+  let alreadyReviewed = null;
+  if (userId) {
+    alreadyReviewed = product.reviews.find(
+      (r) => r.user && r.user.toString() === userId.toString()
+    );
+  }
+
+  if (alreadyReviewed) {
+    alreadyReviewed.rating = Number(rating);
+    alreadyReviewed.comment = comment.trim();
+    if (title !== undefined) alreadyReviewed.title = title.trim();
+    if (image !== undefined) alreadyReviewed.image = image;
+    alreadyReviewed.name = reviewerName;
+
+    // Also update in dedicated Review collection in MongoDB
+    await Review.findOneAndUpdate(
+      { product: product._id, user: userId },
+      {
+        product: product._id,
+        productName: product.name,
+        user: userId,
+        name: reviewerName,
         rating: Number(rating),
         title: title ? title.trim() : '',
         comment: comment.trim(),
         image: image || '',
         verified: true,
-        user: req.user._id,
-      };
-
-      product.reviews.unshift(review);
-    }
-
-    product.numReviews = product.reviews.length;
-
-    const totalRatings = product.reviews.reduce((acc, item) => item.rating + acc, 0);
-    product.rating = Number((totalRatings / product.reviews.length).toFixed(1));
-
-    await product.save();
-
-    res.status(201).json({
-      message: alreadyReviewed ? 'Review updated successfully!' : 'Review submitted successfully!',
-      reviews: product.reviews,
-      rating: product.rating,
-      numReviews: product.numReviews,
-    });
+      },
+      { upsert: true, new: true }
+    );
   } else {
-    res.status(404);
-    throw new Error('Product not found');
+    const reviewData = {
+      name: reviewerName,
+      rating: Number(rating),
+      title: title ? title.trim() : '',
+      comment: comment.trim(),
+      image: image || '',
+      verified: true,
+      user: userId,
+    };
+
+    product.reviews.unshift(reviewData);
+
+    // Also create document in dedicated 'reviews' collection in MongoDB!
+    await Review.create({
+      product: product._id,
+      productName: product.name,
+      user: userId,
+      name: reviewerName,
+      rating: Number(rating),
+      title: title ? title.trim() : '',
+      comment: comment.trim(),
+      image: image || '',
+      verified: true,
+    });
   }
+
+  product.numReviews = product.reviews.length;
+  const totalRatings = product.reviews.reduce((acc, item) => item.rating + acc, 0);
+  product.rating = Number((totalRatings / product.reviews.length).toFixed(1));
+
+  await product.save();
+
+  res.status(201).json({
+    message: alreadyReviewed ? 'Review updated successfully!' : 'Review submitted successfully!',
+    reviews: product.reviews,
+    rating: product.rating,
+    numReviews: product.numReviews,
+  });
 });
 
 // @desc    Get top rated products

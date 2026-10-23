@@ -7,6 +7,7 @@ import User from '../models/userModel.js';
 import Product from '../models/productModel.js';
 import Order from '../models/orderModel.js';
 import Category from '../models/categoryModel.js';
+import Review from '../models/reviewModel.js';
 import connectDB from '../config/db.js';
 
 dotenv.config();
@@ -18,6 +19,7 @@ const importData = async () => {
     await Product.deleteMany();
     await User.deleteMany();
     await Category.deleteMany();
+    await Review.deleteMany();
 
     // Hash passwords for seed users
     const hashedUsers = await Promise.all(
@@ -64,7 +66,26 @@ const importData = async () => {
       };
     });
 
-    await Product.insertMany(sampleProducts);
+    const createdProducts = await Product.insertMany(sampleProducts);
+
+    const allReviewsToInsert = [];
+    createdProducts.forEach((prod) => {
+      prod.reviews.forEach((rev) => {
+        allReviewsToInsert.push({
+          product: prod._id,
+          productName: prod.name,
+          user: rev.user,
+          name: rev.name,
+          rating: rev.rating,
+          title: rev.title,
+          comment: rev.comment,
+          image: rev.image,
+          verified: rev.verified,
+        });
+      });
+    });
+
+    await Review.insertMany(allReviewsToInsert);
 
     const sampleCategories = [
       { name: 'Men', image: 'https://images.unsplash.com/photo-1617137984095-74e4e5e3613f?q=80&w=800&auto=format&fit=crop' },
@@ -90,6 +111,7 @@ const destroyData = async () => {
     await Product.deleteMany();
     await User.deleteMany();
     await Category.deleteMany();
+    await Review.deleteMany();
 
     console.log('Data Destroyed!');
     process.exit();

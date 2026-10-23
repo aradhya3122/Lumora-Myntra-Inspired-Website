@@ -4,13 +4,13 @@ import User from '../models/userModel.js';
 
 // Protect routes
 const protect = asyncHandler(async (req, res, next) => {
-  token = req.cookies?.jwt;
+  let token = req.cookies?.jwt;
 
   if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   }
 
-  if (token) {
+  if (token && token !== 'undefined' && token !== 'null') {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = await User.findById(decoded.userId).select('-password');
@@ -25,6 +25,25 @@ const protect = asyncHandler(async (req, res, next) => {
   }
 });
 
+// Optional protect middleware (allows guest actions but attaches user if token exists)
+const optionalProtect = asyncHandler(async (req, res, next) => {
+  let token = req.cookies?.jwt;
+
+  if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+
+  if (token && token !== 'undefined' && token !== 'null') {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = await User.findById(decoded.userId).select('-password');
+    } catch (error) {
+      // Continue even if token verification fails
+    }
+  }
+  next();
+});
+
 // Admin middleware
 const admin = (req, res, next) => {
   if (req.user && req.user.isAdmin) {
@@ -35,4 +54,4 @@ const admin = (req, res, next) => {
   }
 };
 
-export { protect, admin };
+export { protect, optionalProtect, admin };
